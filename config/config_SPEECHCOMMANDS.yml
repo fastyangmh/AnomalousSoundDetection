@@ -8,6 +8,13 @@ batch_size: 32
 num_workers: 0
 device: cuda
 sample_rate: 16000
+lr: 1e-3
+model_name: AE
+in_chans: 1
+input_height: 64
+latent_dim: 256
+loss_function_name: MSELoss
+checkpoint_path: null
 
 # transforms configuration
 transforms_config:
@@ -19,8 +26,8 @@ transforms_config:
       n_mels: 64
     AmplitudeToDB: null
     Resize:
-      - 224
-      - 224
+      - 64
+      - 64
 
   val:
     PadWaveform:
@@ -30,8 +37,8 @@ transforms_config:
       n_mels: 64
     AmplitudeToDB: null
     Resize:
-      - 224
-      - 224
+      - 64
+      - 64
 
   test:
     PadWaveform:
@@ -41,8 +48,8 @@ transforms_config:
       n_mels: 64
     AmplitudeToDB: null
     Resize:
-      - 224
-      - 224
+      - 64
+      - 64
 
   predict:
     PadWaveform:
@@ -52,8 +59,8 @@ transforms_config:
       n_mels: 64
     AmplitudeToDB: null
     Resize:
-      - 224
-      - 224
+      - 64
+      - 64
 
 # target transforms configuration
 target_transforms_config:
@@ -64,3 +71,18 @@ target_transforms_config:
   test: null
 
   predict: null
+
+# optimizers configuration
+optimizers_config:
+  Adam:
+    betas:
+      - 0.9
+      - 0.999
+    eps: 1e-08
+    weight_decay: 0
+    amsgrad: False
+
+# learning rate schedulers configuration
+lr_schedulers_config:
+  CosineAnnealingLR:
+    T_max: 10
