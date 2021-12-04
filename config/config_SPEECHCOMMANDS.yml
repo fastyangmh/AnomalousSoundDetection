@@ -1,4 +1,66 @@
-#  parameters configuration
+# parameters configuration
 mode: train
 root: data/
 predefined_dataset: SPEECHCOMMANDS
+classes: ["normal", "abnormal"]
+max_samples: null
+batch_size: 32
+num_workers: 0
+device: cuda
+sample_rate: 16000
+
+# transforms configuration
+transforms_config:
+  train:
+    PadWaveform:
+      max_waveform_length: 16000
+    MelSpectrogram:
+      sample_rate: 16000
+      n_mels: 64
+    AmplitudeToDB: null
+    Resize:
+      - 224
+      - 224
+
+  val:
+    PadWaveform:
+      max_waveform_length: 16000
+    MelSpectrogram:
+      sample_rate: 16000
+      n_mels: 64
+    AmplitudeToDB: null
+    Resize:
+      - 224
+      - 224
+
+  test:
+    PadWaveform:
+      max_waveform_length: 16000
+    MelSpectrogram:
+      sample_rate: 16000
+      n_mels: 64
+    AmplitudeToDB: null
+    Resize:
+      - 224
+      - 224
+
+  predict:
+    PadWaveform:
+      max_waveform_length: 16000
+    MelSpectrogram:
+      sample_rate: 16000
+      n_mels: 64
+    AmplitudeToDB: null
+    Resize:
+      - 224
+      - 224
+
+# target transforms configuration
+target_transforms_config:
+  train: null
+
+  val: null
+
+  test: null
+
+  predict: null
