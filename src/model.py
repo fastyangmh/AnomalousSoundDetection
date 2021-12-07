@@ -9,6 +9,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from torchsummary import summary
 import torch
+from scipy.stats import gaussian_kde
+from sklearn import metrics
+import pandas as pd
 
 
 #def
@@ -126,6 +129,58 @@ class UnsupervisedModel(BaseModel):
         y_step = y.cpu().data.numpy()
         return {'y': y_step, 'loss': loss_step}
 
+    def calculate_threshold(self, x1, x2):
+        #estimate kernel density
+        kde1 = gaussian_kde(x1)
+        kde2 = gaussian_kde(x2)
+
+        #generate the data
+        xmin = min(x1.min(), x2.min())
+        xmax = max(x1.max(), x2.max())
+        dx = 0.2 * (xmax - xmin)
+        xmin -= dx
+        xmax += dx
+        data = np.linspace(xmin, xmax, len(x1))
+
+        #get density with data
+        kde1_x = kde1(data)
+        kde2_x = kde2(data)
+
+        #calculate intersect
+        idx = np.argwhere(np.diff(np.sign(kde1_x - kde2_x))).flatten()
+        return data[idx]
+
+    def calculate_confusion_matrix(self, y, loss):
+        normal_score = loss[y == self.classes.index('normal')]
+        abnormal_score = loss[y == self.classes.index('abnormal')]
+        threshold = self.calculate_threshold(x1=normal_score,
+                                             x2=abnormal_score)
+        max_accuracy, best_threshold = 0, 0
+        for v in threshold:
+            y_pred = np.zeros(len(loss)) - 1
+            y_pred = np.where(loss < v, self.classes.index('normal'),
+                              self.classes.index('abnormal'))
+            confusion_matrix = pd.DataFrame(metrics.confusion_matrix(
+                y_true=y, y_pred=y_pred,
+                labels=list(range(len(self.classes)))),
+                                            index=self.classes,
+                                            columns=self.classes)
+            accuracy = np.diagonal(
+                confusion_matrix).sum() / confusion_matrix.values.sum()
+            if accuracy > max_accuracy:
+                max_accuracy = accuracy
+                best_threshold = v
+        y_pred = np.zeros(len(loss)) - 1
+        y_pred = np.where(loss < best_threshold, self.classes.index('normal'),
+                          self.classes.index('abnormal'))
+        confusion_matrix = pd.DataFrame(metrics.confusion_matrix(
+            y_true=y, y_pred=y_pred, labels=list(range(len(self.classes)))),
+                                        index=self.classes,
+                                        columns=self.classes)
+        accuracy = np.diagonal(
+            confusion_matrix).sum() / confusion_matrix.values.sum()
+        return confusion_matrix, accuracy, best_threshold
+
     def test_epoch_end(self, test_outs):
         stages = ['train', 'val', 'test']
         print('\ntest the {} dataset'.format(stages[self.stage_index]))
@@ -144,6 +199,25 @@ class UnsupervisedModel(BaseModel):
         self.logger.experiment.add_figure(
             '{} loss density'.format(stages[self.stage_index]), figure,
             self.current_epoch)
+        if stages[self.stage_index] == 'test':
+            confusion_matrix, accuracy, best_threshold = self.calculate_confusion_matrix(
+                y=y, loss=loss)
+            print(confusion_matrix)
+            plt.figure(figsize=[11.2, 6.3])
+            plt.title('{}\nthreshold: {}\naccuracy: {}'.format(
+                stages[self.stage_index], best_threshold, accuracy))
+            figure = sns.heatmap(data=confusion_matrix,
+                                 cmap='Spectral',
+                                 annot=True,
+                                 fmt='g').get_figure()
+            plt.yticks(rotation=0)
+            plt.ylabel(ylabel='Actual class')
+            plt.xlabel(xlabel='Predicted class')
+            plt.close()
+            self.logger.experiment.add_figure(
+                '{} confusion matrix'.format(stages[self.stage_index]), figure,
+                self.current_epoch)
+            self.log('test_accuracy', accuracy)
         self.stage_index += 1
 
 
