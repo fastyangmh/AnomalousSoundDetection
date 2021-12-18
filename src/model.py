@@ -157,7 +157,6 @@ class UnsupervisedModel(BaseModel):
                                              x2=abnormal_score)
         max_accuracy, best_threshold = 0, 0
         for v in threshold:
-            y_pred = np.zeros(len(loss)) - 1
             y_pred = np.where(loss < v, self.classes.index('normal'),
                               self.classes.index('abnormal'))
             confusion_matrix = pd.DataFrame(metrics.confusion_matrix(
@@ -170,7 +169,6 @@ class UnsupervisedModel(BaseModel):
             if accuracy > max_accuracy:
                 max_accuracy = accuracy
                 best_threshold = v
-        y_pred = np.zeros(len(loss)) - 1
         y_pred = np.where(loss < best_threshold, self.classes.index('normal'),
                           self.classes.index('abnormal'))
         confusion_matrix = pd.DataFrame(metrics.confusion_matrix(
