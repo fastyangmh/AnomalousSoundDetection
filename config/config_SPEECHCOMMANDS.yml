@@ -22,6 +22,16 @@ default_root_dir: save/
 gpus: -1
 precision: 32
 max_epochs: 100
+web_interface: True
+examples:
+  [
+    "examples/01d22d03_nohash_1_normal.wav",
+    "examples/0f46028a_nohash_0_normal.wav",
+    "examples/1e4064b8_nohash_1_abnormal.wav",
+    "examples/49f30eed_nohash_0_abnormal.wav",
+    "examples/4fd1443e_nohash_0_normal.wav",
+    "examples/d874a786_nohash_0_abnormal.wav",
+  ]
 threshold: null
 tuning_test: False
 cpu_resources_per_trial: 1

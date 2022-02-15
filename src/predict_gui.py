@@ -9,6 +9,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from playsound import playsound
 import tkinter as tk
+import gradio as gr
 
 
 # class
@@ -24,6 +25,9 @@ class PredictGUI(BasePredictGUI):
         assert project_parameters.threshold is not None, 'please check the threshold. the threshold value is {}.'.format(
             project_parameters.threshold)
         self.threshold = project_parameters.threshold
+        self.web_interface = project_parameters.web_interface
+        self.examples = project_parameters.examples if len(
+            project_parameters.examples) else None
 
         # button
         self.play_button = Button(master=self.window,
@@ -109,7 +113,7 @@ class PredictGUI(BasePredictGUI):
 
     def recognize(self):
         if self.filepath is not None:
-            score, fake_sample = self.predictor.predict(filepath=self.filepath)
+            score, fake_sample = self.predictor.predict(inputs=self.filepath)
             self.display_output(fake_sample=fake_sample)
             score = score.item()  # score is a scalar
             self.predicted_label.config(text='score:\n{}'.format(score))
@@ -124,20 +128,34 @@ class PredictGUI(BasePredictGUI):
         else:
             messagebox.showerror(title='Error!', message='please open a file!')
 
+    def inference(self, inputs):
+        score, fake_sample = self.predictor.predict(inputs=inputs)
+        score = score.item()  # score is a scalar
+        result = f'threshold: {self.threshold}\nscore: {score}\nresult: {self.classes[int(score >= self.threshold)]}'
+        return result
+
     def run(self):
-        # NW
-        self.open_file_button.pack(anchor=tk.NW)
-        self.recognize_button.pack(anchor=tk.NW)
-        self.play_button.pack(anchor=tk.NW)
+        if self.web_interface:
+            gr.Interface(
+                fn=self.inference,
+                inputs=gr.inputs.Audio(source='microphone', type='filepath'),
+                outputs=gr.outputs.Textbox(),
+                examples=self.examples,
+                interpretation="default").launch(share=True, inbrowser=True)
+        else:
+            # NW
+            self.open_file_button.pack(anchor=tk.NW)
+            self.recognize_button.pack(anchor=tk.NW)
+            self.play_button.pack(anchor=tk.NW)
 
-        # N
-        self.filepath_label.pack(anchor=tk.N)
-        self.image_canvas.get_tk_widget().pack(anchor=tk.N)
-        self.predicted_label.pack(anchor=tk.N)
-        self.result_label.pack(anchor=tk.N)
+            # N
+            self.filepath_label.pack(anchor=tk.N)
+            self.image_canvas.get_tk_widget().pack(anchor=tk.N)
+            self.predicted_label.pack(anchor=tk.N)
+            self.result_label.pack(anchor=tk.N)
 
-        # run
-        super().run()
+            # run
+            super().run()
 
 
 if __name__ == '__main__':
