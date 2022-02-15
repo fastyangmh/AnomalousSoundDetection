@@ -5,6 +5,7 @@ import torch
 from DeepLearningTemplate.data_preparation import parse_transforms, AudioLoader
 from DeepLearningTemplate.predict import AudioPredictDataset
 from typing import TypeVar, Any
+
 T_co = TypeVar('T_co', covariant=True)
 from os.path import isfile
 from torch.utils.data import DataLoader
@@ -37,13 +38,19 @@ class Predict:
         self.classes = project_parameters.classes
         self.loader = AudioLoader(sample_rate=project_parameters.sample_rate)
         self.loss_function = self.model.loss_function
+        self.in_chans = project_parameters.in_chans
 
-    def predict(self, filepath) -> Any:
+    def predict(self, inputs) -> Any:
         result = []
         fake_samples = []
-        if isfile(path=filepath):
+        if isfile(path=inputs):
             # predict the file
-            sample = self.loader(path=filepath)
+            sample = self.loader(path=inputs)
+            in_chans, _ = sample.shape
+            if in_chans != self.in_chans:
+                sample = sample.mean(0)
+                sample = torch.cat(
+                    [sample[None] for idx in range(self.in_chans)])
             # the transformed sample dimension is (1, in_chans, freq, time)
             sample = self.transform(sample)[None]
             # convert the range of the sample to 0~1
@@ -57,7 +64,7 @@ class Predict:
                 fake_samples.append(sample_hat.cpu().data.numpy())
         else:
             # predict the file from folder
-            dataset = AudioPredictDataset(root=filepath,
+            dataset = AudioPredictDataset(root=inputs,
                                           loader=self.loader,
                                           transform=self.transform)
             pin_memory = True if self.device == 'cuda' and torch.cuda.is_available(
@@ -92,4 +99,4 @@ if __name__ == '__main__':
 
     # predict file
     result = Predict(project_parameters=project_parameters).predict(
-        filepath=project_parameters.root)
+        inputs=project_parameters.root)
