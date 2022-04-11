@@ -22,6 +22,7 @@ default_root_dir: save/
 gpus: -1
 precision: 32
 max_epochs: 100
+threshold: null
 web_interface: True
 examples:
   [
@@ -32,7 +33,6 @@ examples:
     "examples/4fd1443e_nohash_0_normal.wav",
     "examples/d874a786_nohash_0_abnormal.wav",
   ]
-threshold: null
 tuning_test: False
 cpu_resources_per_trial: 1
 gpu_resources_per_trial: 1
